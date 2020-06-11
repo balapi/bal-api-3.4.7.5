@@ -1,0 +1,160 @@
+This repo contains the BAL API associated with BAL R3.4.7.5
+
+This repo supplies a simple example code using the BAL API. The example code can be built into two different targets:
+
+hello_bal - This target builds the supplied example code into an executable called hello_bal.
+            The hello_bal executable does not need any OLT hardware or other broadcom software to run.
+            The purpose of this executable is to prove that the BAL API github package is complete and coherent.
+
+hello_bal_app - This target builds the supplied example code into an executable called hello_bal_app.
+                The hello_bal_app executable is built against a shared object library that may be built
+                using a BAL R3.4.7.5 release package (available from Broadcom under SLA).
+                This library may also be provided (stripped of symbols) by a Broadcom customer who is authorized
+                to provide it.
+                This shared object library is called libbal_host_api.so (but will be appended with a version number).
+                The hello_bal_app and libbal_host_api.so together can interact with a Broadcom component called 
+                dev_mgmt_daemon to configure and control real OLT hardware.  In this example code, the OLT 
+                hardware must support XGS PON mode.
+
+
+             ---------------------
+             |                   |
+             |  hello_bal_app    |
+             |                   |
+             ---------------------                ----------------------------
+             |                   |                |                          |
+             |  libbal_host_api  |----------------|      dev_mgmt_daemon     |  
+             |                   |                |                          |
+             ---------------------                ----------------------------
+                                                  |  switch SDK | MAC SDK    |
+                                                  ----------------------------
+                                                  |  switch HW  |  MAC HW    |
+                                                  ----------------------------
+                                          
+
+BUILDING THE HELLO_BAL TARGET
+
+To build the example application that does not require hardware, go to the example directory:
+
+  cd examples
+
+Then run make:
+
+  make hello_bal
+
+Then execute the resulting application:
+
+  ./hello_bal
+
+
+You should see printouts that all of the function calls successfully executed (notice that the functions called are
+stubbed functions):
+
+ host initialization success
+ performing reset device 0
+ -- entering :stubbed bcmolt_oper_submit
+ device reset operation success
+ -- entering :stubbed bcmolt_ind_subscribe
+ Subscribed to device connect indications
+ -- entering :stubbed bcmolt_ind_subscribe
+ Subscribed to device connect-failure indications
+ performing connect device 0
+ -- entering :stubbed bcmolt_oper_submit
+ device connect operation success
+ connection complete
+ -- entering :stubbed bcmolt_ind_subscribe
+ Subscribed to interface state change indications
+ performing pon interface activation
+ -- entering :stubbed bcmolt_oper_submit
+ interface activation operation success
+ interface activation complete
+ -- entering :stubbed bcmolt_cfg_set
+ onu configured
+ -- entering :stubbed bcmolt_cfg_set
+ tm_sched configured
+ -- entering :stubbed bcmolt_cfg_set
+ tm_queue configured
+ -- entering :stubbed bcmolt_cfg_set
+ flow configured
+
+NOTE: The BAL API function built for hello_bal are only stubs, and do not actually
+perform any actual function.  The purpose of executing the calls is provide an
+example of how to call the BAL API functions, and to validate that the files in
+this repo are coherent.
+
+
+BUILDING THE HELLO_BAL_APP TARGET
+
+To build a functional BAL application using the hello_bal example, 
+you need to have the libbal_host_api.so library. 
+
+Do the following steps:
+
+(1) Copy libbal_host_api.3.4.7.so shared library for the BAL API module to the bal_api root directory
+
+(2) Go to the examples directory:
+
+  cd examples
+
+Then run make:
+
+  make hello_bal_app
+
+To Run the hello_bal_app functional application:
+--------------------------------------------
+
+(1) Start BAL dev_mgmt_daemon executable as per the procedure explained in the BAL Programmer's Guide.
+
+(2) Then execute the resulting application:
+
+  LD_LIBRARY_PATH=.. ./hello_bal_app
+
+It is assumed that the dev_mgmt_daemon is co-located (on the same CPU) with the hello_bal_app.
+
+
+Again, you should see printouts that all of the function calls successfully executed, assuming that
+the associate hardware is working correctly (notice that the functions called are not stubbed, but are real functions):
+
+ host initialization success
+ performing reset device 0
+ device reset operation success
+ Subscribed to device connect indication
+ Subscribed to device connect-failure indication
+ performing connect device 0
+ device connect operation success
+ waiting for connection complete indication...
+ [-- olt 0: Device Indication Received --]
+ olt 0: device id [0] connection is complete, system_mode is xgs__2_x, standalone=0
+ connection complete
+ interface activation operation success
+ waiting for interface activation complete indication...
+ [-- olt 0: Pon Interface Indication Received for pon 0 --]
+ pon interface state change indication success
+ pon interface has changed state from inactive to active_working
+ interface activation complete
+ onu configured
+ tm_sched configured
+ tm_queue configured
+ flow configured
+
+
+
+
+NOTE: When built with BAL API shared library, the BAL API functions will 
+    perform actual functions and be able to interact with the 
+    MAC & Switch Hardware through the dev_mgmt_daemon running on the system.
+
+
+BUILDING THE CLEAN TARGET
+
+The other make target supported in this repo is 'clean'.  This target cleans the bal_api repo of all built targets.
+
+To clean the system:
+
+(1) Go to the examples directory:
+
+  cd examples
+
+Then run make:
+
+  make clean
